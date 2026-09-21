@@ -1,0 +1,36 @@
+{
+  "zig": {
+    "n_warm": 398,
+    "non_200": 0,
+    "cold_ms": [
+      334.7,
+      240.2
+    ],
+    "min": 102.7,
+    "p50": 152.35,
+    "p90": 218.25,
+    "p95": 249.45,
+    "p99": 301.71399999999966,
+    "max": 810.8,
+    "mean": 164.2494974874372,
+    "label": "Zig 0.16, std.http, ReleaseFast"
+  },
+  "python": {
+    "n_warm": 398,
+    "non_200": 0,
+    "cold_ms": [
+      185.04,
+      208.35
+    ],
+    "min": 105.31,
+    "p50": 150.06,
+    "p90": 218.02200000000002,
+    "p95": 244.2115,
+    "p99": 293.63239999999945,
+    "max": 455.62,
+    "mean": 160.5673366834171,
+    "label": "Python 3.13, httpx (HTTP/2)"
+  },
+  "subtitle": "Same request bodies, same endpoint, one keep-alive connection each, sequential. Runs interleaved (Python, Zig, Zig, Python). n = 398 warm requests per client.",
+  "footer": "Request latency = send to last body byte, measured inside each client with a monotonic clock. First request of each run (TLS handshake) excluded. The network + model round trip dominates both; the client only controls what is left over."
+}

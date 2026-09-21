@@ -1,0 +1,99 @@
+{
+  "rows_jev": 5000,
+  "rows_llm": 300,
+  "questions_per_row": 9,
+  "models": {
+    "jev (all rows)": {
+      "n": 5000,
+      "unparseable": 0,
+      "stars_exact": 0.6706,
+      "stars_within_1": 0.983,
+      "stars_mae": 0.3474,
+      "sentiment_accuracy": 0.8192,
+      "p50_ms": 154.3222499967669,
+      "cost_per_row": 2.91067812e-05,
+      "cost_per_1M_rows": 29.106781199999997
+    },
+    "jev (same rows as LLMs)": {
+      "n": 300,
+      "unparseable": 0,
+      "stars_exact": 0.6633333333333333,
+      "stars_within_1": 0.9833333333333333,
+      "stars_mae": 0.36,
+      "sentiment_accuracy": 0.81,
+      "p50_ms": 152.43249999912223,
+      "cost_per_row": 2.9022700000000003e-05,
+      "cost_per_1M_rows": 29.022700000000004
+    },
+    "openai/gpt-6-astra": {
+      "n": 100,
+      "unparseable": 0,
+      "stars_exact": 0.66,
+      "stars_within_1": 1.0,
+      "stars_mae": 0.34,
+      "sentiment_accuracy": 0.76,
+      "p50_ms": 2679.8959000007017,
+      "cost_per_row": 0.006174,
+      "cost_per_1M_rows": 6174.0
+    },
+    "google/gemini-3.8-flash": {
+      "n": 300,
+      "unparseable": 8,
+      "stars_exact": 0.7166666666666667,
+      "stars_within_1": 0.96,
+      "stars_mae": 0.2842465753424658,
+      "sentiment_accuracy": 0.83,
+      "p50_ms": 1546.3042499977746,
+      "cost_per_row": 0.00047495499999999994,
+      "cost_per_1M_rows": 474.955
+    },
+    "openai/gpt-5.6-luna": {
+      "n": 300,
+      "unparseable": 0,
+      "stars_exact": 0.6666666666666666,
+      "stars_within_1": 0.9766666666666667,
+      "stars_mae": 0.36333333333333334,
+      "sentiment_accuracy": 0.8533333333333334,
+      "p50_ms": 2602.351699999417,
+      "cost_per_row": 0.0001886,
+      "cost_per_1M_rows": 188.6
+    }
+  },
+  "jev_throughput": {
+    "rows_run": 5000,
+    "wall_s": 69.0343026000046,
+    "workers": 12,
+    "rows_per_sec": 72.4277614415948,
+    "decisions_per_sec": 651.8498529743532,
+    "hours_for_1M_rows": 3.8352390333335884
+  },
+  "tag_agreement_with_openai/gpt-6-astra": {
+    "jev": {
+      "staff": 0.98,
+      "price": 0.97,
+      "wait": 0.98,
+      "cleanliness": 1.0,
+      "compensation": 0.99,
+      "will_return": 0.89,
+      "health_safety": 0.99
+    },
+    "google/gemini-3.8-flash": {
+      "staff": 0.93,
+      "price": 0.95,
+      "wait": 0.97,
+      "cleanliness": 0.99,
+      "compensation": 0.99,
+      "will_return": 0.92,
+      "health_safety": 0.98
+    },
+    "openai/gpt-5.6-luna": {
+      "staff": 0.97,
+      "price": 0.97,
+      "wait": 0.96,
+      "cleanliness": 0.99,
+      "compensation": 0.97,
+      "will_return": 0.96,
+      "health_safety": 0.95
+    }
+  }
+}

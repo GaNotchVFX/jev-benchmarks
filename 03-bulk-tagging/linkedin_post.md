@@ -26,6 +26,6 @@ Caveats: short reviews, one dataset, the big model only ran on 100 rows because 
 
 If you have a backlog of text you have never been able to afford to read, I can tag all of it and hand you a spreadsheet you can filter. DM me.
 
-Code and raw results: [link to repo]
+Code and raw results: https://github.com/GaNotchVFX/jev-benchmarks
 
 #AI #DataAnalytics #CustomerExperience #LLM

@@ -25,6 +25,6 @@ Caveats: clean text, not real speech-to-text output. Home internet, not a datace
 
 If you are building or running a voice agent and the pauses are killing your calls, I can measure where your milliseconds go and fix the decision layer. DM me.
 
-Code and raw results: [link to repo]
+Code and raw results: https://github.com/GaNotchVFX/jev-benchmarks
 
 #VoiceAI #AI #LLM #Latency

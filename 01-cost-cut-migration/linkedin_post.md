@@ -24,6 +24,6 @@ Caveats: one dataset, one afternoon, no tuning on any model. Your tickets are no
 
 If you have an LLM bill for classification, routing, guardrails or LLM-as-judge, I will run this on a sample of your real traffic and show you the same three columns: accuracy, latency, cost. DM me.
 
-Code and raw results: [link to repo]
+Code and raw results: https://github.com/GaNotchVFX/jev-benchmarks
 
 #AI #LLM #MachineLearning #CustomerSupport

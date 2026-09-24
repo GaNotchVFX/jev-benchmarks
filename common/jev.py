@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""jev.py - tiny stdlib-only Jev client (OpenRouter Decisions API, model typesafe/jev-1.13).
+"""jev.py - tiny stdlib-only Jev client. Backend: TypeSafe direct (api.typesafe.ai, jev-latest) when TYPESAFE_API_KEY
+exists, else OpenRouter (typesafe/jev-1.13). Force with JEV_BACKEND=typesafe|openrouter; pin a model with JEV_MODEL.
   python jev.py test                                   # one real sales-email call, prints answers/latency/cost
   python jev.py ask   STATE.json QUESTIONS.json        # one call -> answers JSON on stdout
   python jev.py batch ITEMS.jsonl QUESTIONS.json OUT.jsonl [--workers 8] [--max-usd 0.50] [--floor 5]
@@ -13,33 +14,62 @@
   python jev.py check  RULES.txt TEXT|- [--t 0.7] [--hook]  # rule gate; --hook exits 2 on violation (Stop hook)
 ITEMS.jsonl: one object per line with an "id"; every other field becomes the state.
 OUT.jsonl is checkpointed: rerunning skips ids already answered (no double-paying).
-Key: $OPENROUTER_API_KEY, else ~/.config/jev/openrouter_key, else Windows user env. Never printed.
+Keys: $TYPESAFE_API_KEY / $OPENROUTER_API_KEY, else ~/.config/jev/{typesafe,openrouter}_key, else Windows user env.
+Never printed. Cost on TypeSafe direct is estimated from input tokens at $0.042/1M (list price).
 """
 import json, os, sys, time, random, threading, urllib.request, urllib.error
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-URL = os.environ.get("JEV_URL", "https://openrouter.ai/api/alpha/decisions")
-MODEL = os.environ.get("JEV_MODEL", "typesafe/jev-1.13")
-KEYFILE = Path.home() / ".config" / "jev" / "openrouter_key"
+KEYDIR = Path.home() / ".config" / "jev"
+# Backend: TypeSafe direct (default when a TypeSafe key exists) or OpenRouter. Force with JEV_BACKEND=typesafe|openrouter.
+BACKENDS = {
+    "typesafe": {"url": "https://api.typesafe.ai/v1/systemone", "model": "jev-latest",
+                 "env": "TYPESAFE_API_KEY", "file": KEYDIR / "typesafe_key"},
+    "openrouter": {"url": "https://openrouter.ai/api/alpha/decisions", "model": "typesafe/jev-1.13",
+                   "env": "OPENROUTER_API_KEY", "file": KEYDIR / "openrouter_key"},
+}
+LIST_PRICE = 0.042 / 1e6  # USD per input token (TypeSafe list); used when the backend doesn't report cost
 RETRY = {408, 409, 425, 429, 500, 502, 503, 504, 529}
 STOP = threading.Event()
 
 
-def key():
-    k = os.environ.get("OPENROUTER_API_KEY")
-    if not k and KEYFILE.exists():
-        k = KEYFILE.read_text().strip()
+def _find_key(b):
+    cfg = BACKENDS[b]
+    k = os.environ.get(cfg["env"])
+    if not k and cfg["file"].exists():
+        k = cfg["file"].read_text().strip()
     if not k and sys.platform == "win32":
         import winreg
         try:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as h:
-                k = winreg.QueryValueEx(h, "OPENROUTER_API_KEY")[0]
+                k = winreg.QueryValueEx(h, cfg["env"])[0]
         except OSError:
             pass
-    if not k:
-        sys.exit("NO_KEY: set OPENROUTER_API_KEY or write it to ~/.config/jev/openrouter_key (chmod 600)")
     return k
+
+
+_B = {}
+
+
+def backend():
+    if not _B:
+        want = os.environ.get("JEV_BACKEND")
+        order = [want] if want else ["typesafe", "openrouter"]
+        for b in order:
+            k = _find_key(b)
+            if k:
+                cfg = BACKENDS[b]
+                _B.update(name=b, key=k, url=os.environ.get("JEV_URL", cfg["url"]),
+                          model=os.environ.get("JEV_MODEL", cfg["model"]))
+                break
+        else:
+            sys.exit("NO_KEY: set TYPESAFE_API_KEY (or OPENROUTER_API_KEY), or write it to ~/.config/jev/typesafe_key")
+    return _B
+
+
+def key():
+    return backend()["key"]
 
 
 def _req(url, body=None):
@@ -56,10 +86,13 @@ def call(state, questions, tries=5):
     for i in range(tries):
         t = time.perf_counter()
         try:
-            out = _req(URL, {"model": MODEL, "state": state, "questions": questions})
+            b = backend()
+            out = _req(b["url"], {"model": b["model"], "state": state, "questions": questions})
             u = out.get("usage", {})
+            it = u.get("input_tokens", 0) or 0
+            cost = float(u["cost"]) if u.get("cost") is not None else it * LIST_PRICE
             return {"answers": out["answers"], "ms": round((time.perf_counter() - t) * 1000),
-                    "cost": float(u.get("cost") or 0), "in_tok": u.get("input_tokens", 0)}
+                    "cost": cost, "in_tok": it, "backend": b["name"], "model": out.get("model", b["model"])}
         except urllib.error.HTTPError as e:
             last = f"HTTP {e.code}: {e.read()[:300].decode(errors='replace')}"
             if e.code == 402:
@@ -73,6 +106,9 @@ def call(state, questions, tries=5):
 
 
 def balance():
+    """OpenRouter prepaid balance in USD; None on TypeSafe direct (no credits endpoint - check console.typesafe.ai)."""
+    if backend()["name"] != "openrouter":
+        return None
     d = _req("https://openrouter.ai/api/v1/credits")["data"]
     return float(d["total_credits"]) - float(d["total_usage"])
 
@@ -87,7 +123,7 @@ def batch(items_p, q_p, out_p, workers=8, max_usd=0.50, floor=5.0):
     todo = [it for it in items if it["id"] not in done]
     if todo and floor > 0:
         b = balance()
-        if b < floor:
+        if b is not None and b < floor:
             sys.exit(f"LOW_BALANCE: ${b:.2f} < floor ${floor:.2f}; not starting")
     spent = [0.0]; lock = threading.Lock(); t0 = time.perf_counter()
 
@@ -339,6 +375,8 @@ if __name__ == "__main__":
     elif a[0] == "status":
         status()
     elif a[0] == "balance":
-        print(f"${balance():.2f}")
+        b = balance()
+        print(f"backend={backend()['name']} model={backend()['model']} " +
+              (f"balance=${b:.2f}" if b is not None else "balance=n/a (check console.typesafe.ai)"))
     else:
         sys.exit(__doc__)
